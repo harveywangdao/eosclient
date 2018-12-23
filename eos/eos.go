@@ -18,6 +18,10 @@ func (e *EosClient) InvokeContract(richPrivKeyHex, contractAddrHex string) error
 	return nil
 }
 
+func (e *EosClient) GetNewWallet() error {
+	return nil
+}
+
 func (e *EosClient) GetBalance(account, symbol, code string) error {
 	assets, err := e.cli.GetCurrencyBalance(eos.AN(account), symbol, eos.AN(code))
 	if err != nil {
@@ -28,18 +32,6 @@ func (e *EosClient) GetBalance(account, symbol, code string) error {
 	data, _ := json.Marshal(assets)
 	logger.Info(string(data))
 
-	return nil
-}
-
-func (e *EosClient) GetNewWallet() error {
-	return nil
-}
-
-func (e *EosClient) BlockByNumber(num int64) error {
-	return nil
-}
-
-func (e *EosClient) QueryTransaction(txHex string) error {
 	return nil
 }
 
@@ -69,7 +61,7 @@ func (e *EosClient) Transfer(from, to, num string) error {
 	return nil
 }
 
-func (e *EosClient) Transfer2(from, to, num, fromPriv string) error {
+func (e *EosClient) QueryTransaction(txHex string) error {
 	return nil
 }
 
