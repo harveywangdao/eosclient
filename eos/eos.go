@@ -3,6 +3,7 @@ package eos
 import (
 	"encoding/json"
 	"eosclient/logger"
+
 	"github.com/eoscanada/eos-go"
 )
 
@@ -176,28 +177,41 @@ func (e *EosClient) Transfer(code, action, from, to, num string) error {
 		}*/
 
 	var actions []*eos.Action
-
-	actionData := eos.ActionData{
-		Data: txData,
+	actionData := eos.NewActionData(txData)
+	permissionLevel, err := eos.NewPermissionLevel(from)
+	if err != nil {
+		logger.Error(err)
+		return err
 	}
 
 	ac := &eos.Action{
 		Account:       eos.AN(code),
 		Name:          eos.ActN(action),
-		Authorization: []PermissionLevel{{eos.AN(alice), eos.PN("active")}},
+		Authorization: []eos.PermissionLevel{permissionLevel},
 		ActionData:    actionData,
 	}
-
 	actions = append(actions, ac)
 
-	opts := &eos.TxOptions{}
+	opts := &eos.TxOptions{
+		HeadBlockID:      block.ID,
+		MaxNetUsageWords: 0,
+		DelaySecs:        0,
+		MaxCPUUsageMS:    0,
+	}
 
 	tx := eos.NewTransaction(actions, opts)
+	txJson, _ := json.Marshal(tx)
+	logger.Info(string(txJson))
+
+	e.cli.SetSigner(eos.NewWalletSigner(e.cli, ""))
 	requiredKeys, err := e.cli.GetRequiredKeys(tx)
 	if err != nil {
 		logger.Error(err)
 		return err
 	}
+
+	requiredKeysJson, _ := json.Marshal(requiredKeys)
+	logger.Info(string(requiredKeysJson))
 
 	/*	signedTx, err := e.cli.WalletSignTransaction()
 		if err != nil {
