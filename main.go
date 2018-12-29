@@ -36,11 +36,12 @@ func main() {
 	}
 
 	ipport := cfg.Section("").Key("EosServerIpPort").String()
+	keosdIpPort := cfg.Section("").Key("KeosdIpPort").String()
 
 	var wg sync.WaitGroup
 	wg.Add(1)
 
-	_, err = test.NewEosClientTest(ipport, &wg)
+	_, err = test.NewEosClientTest(ipport, keosdIpPort, &wg)
 	if err != nil {
 		logger.Error(err)
 		return

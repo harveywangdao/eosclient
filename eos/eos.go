@@ -3,12 +3,14 @@ package eos
 import (
 	"encoding/json"
 	"eosclient/logger"
-
+	"errors"
 	"github.com/eoscanada/eos-go"
+	"strings"
 )
 
 type EosClient struct {
-	cli *eos.API
+	cli      *eos.API
+	keosdCli *eos.API
 }
 
 func (e *EosClient) GetInfo() error {
@@ -69,7 +71,7 @@ func (e *EosClient) GetABI(name string) error {
 	}
 
 	data, _ := json.Marshal(abi)
-	logger.Info(string(data))
+	logger.Debug(string(data))
 
 	return nil
 }
@@ -160,7 +162,8 @@ func (e *EosClient) Transfer(code, action, from, to, num string) error {
 		return err
 	}
 
-	logger.Info("Head block number:", info.HeadBlockNum)
+	data, _ := json.Marshal(info)
+	logger.Info(string(data))
 
 	block, err := e.cli.GetBlockByNum(info.HeadBlockNum)
 	if err != nil {
@@ -168,13 +171,32 @@ func (e *EosClient) Transfer(code, action, from, to, num string) error {
 		return err
 	}
 
-	logger.Info("Head block:", block.Timestamp, block.BlockNum, block.RefBlockPrefix)
+	data, _ = json.Marshal(block)
+	logger.Info(string(data))
 
-	/*	err = e.cli.WalletUnlock("*", "PW5Jpknq77E6U6boTdSK1BpUiEAm9m1LKnzo1ths9FAq3QobzKTky")
+	walletList, err := e.keosdCli.ListWallets()
+	if err != nil {
+		logger.Error(err)
+		return err
+	}
+
+	logger.Info("wallet list:", walletList) //sunlight *
+	if len(walletList) < 1 {
+		logger.Error("not exist wallet")
+		return errors.New("not exist wallet")
+	}
+
+	ss := strings.Split(walletList[0], "")
+
+	if len(ss) > 1 && ss[len(ss)-1] == "*" {
+		logger.Info(walletList[0], "unlock already")
+	} else {
+		err = e.keosdCli.WalletUnlock(walletList[0], "PW5JweLrCbwZ8N4RuVhEcfiBAMypZbXeitVvwEoRGm7K6C7t7UGXM")
 		if err != nil {
 			logger.Error(err)
 			return err
-		}*/
+		}
+	}
 
 	var actions []*eos.Action
 	actionData := eos.NewActionData(txData)
@@ -200,33 +222,52 @@ func (e *EosClient) Transfer(code, action, from, to, num string) error {
 	}
 
 	tx := eos.NewTransaction(actions, opts)
-	txJson, _ := json.Marshal(tx)
-	logger.Info(string(txJson))
+	data, _ = json.Marshal(tx)
+	logger.Info(string(data))
 
-	e.cli.SetSigner(eos.NewWalletSigner(e.cli, ""))
+	e.cli.SetSigner(eos.NewWalletSigner(e.keosdCli, ""))
 	requiredKeys, err := e.cli.GetRequiredKeys(tx)
 	if err != nil {
 		logger.Error(err)
 		return err
 	}
 
-	requiredKeysJson, _ := json.Marshal(requiredKeys)
-	logger.Info(string(requiredKeysJson))
+	if len(requiredKeys.RequiredKeys) < 1 {
+		logger.Error("not required key")
+		return errors.New("not required key")
+	}
 
-	/*	signedTx, err := e.cli.WalletSignTransaction()
-		if err != nil {
-			logger.Error(err)
-			return err
-		}
+	data, _ = json.Marshal(requiredKeys)
+	logger.Info(string(data))
 
-		txout, err := e.cli.PushTransaction(nil)
-		if err != nil {
-			logger.Error(err)
-			return err
-		}
+	signTx := eos.NewSignedTransaction(tx)
+	signedData, err := e.keosdCli.WalletSignTransaction(signTx, info.ChainID, requiredKeys.RequiredKeys[0])
+	if err != nil {
+		logger.Error(err)
+		return err
+	}
 
-		data, _ := json.Marshal(txout)
-		logger.Info(string(data))*/
+	signTx.Signatures = signedData.Signatures
+	data, _ = json.Marshal(signTx)
+	logger.Info(string(data))
+
+	packedTx, err := signTx.Pack(eos.CompressionNone)
+	if err != nil {
+		logger.Error(err)
+		return err
+	}
+
+	data, _ = json.Marshal(packedTx)
+	logger.Info(string(data))
+
+	txout, err := e.cli.PushTransaction(packedTx)
+	if err != nil {
+		logger.Error(err)
+		return err
+	}
+
+	data, _ = json.Marshal(txout)
+	logger.Info(string(data))
 
 	return nil
 }
@@ -243,8 +284,9 @@ func (e *EosClient) GetNewWallet() error {
 	return nil
 }
 
-func NewEosClient(ipport string) (*EosClient, error) {
+func NewEosClient(ipport, keosdIpport string) (*EosClient, error) {
 	e := new(EosClient)
 	e.cli = eos.New("http://" + ipport)
+	e.keosdCli = eos.New("http://" + keosdIpport)
 	return e, nil
 }

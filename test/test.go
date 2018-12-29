@@ -7,8 +7,7 @@ import (
 )
 
 type EosClientTest struct {
-	eosIpPort string
-	cli       *eos.EosClient
+	cli *eos.EosClient
 }
 
 func (e *EosClientTest) testApi() error {
@@ -89,11 +88,10 @@ func (e *EosClientTest) testing(wg *sync.WaitGroup) {
 	}
 }
 
-func NewEosClientTest(ipPort string, wg *sync.WaitGroup) (*EosClientTest, error) {
+func NewEosClientTest(ipPort, keosdIpPort string, wg *sync.WaitGroup) (*EosClientTest, error) {
 	test := new(EosClientTest)
-	test.eosIpPort = ipPort
 
-	cli, err := eos.NewEosClient(test.eosIpPort)
+	cli, err := eos.NewEosClient(ipPort, keosdIpPort)
 	if err != nil {
 		logger.Error(err)
 		return nil, err
