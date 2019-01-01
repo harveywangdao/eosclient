@@ -58,7 +58,7 @@ func (e *EosClient) GetAccount(name string) error {
 	}
 
 	data, _ := json.Marshal(account)
-	logger.Info(string(data))
+	logger.Debug(string(data))
 
 	return nil
 }
@@ -146,7 +146,7 @@ func (e *EosClient) Transfer(code, action, from, to, num string) error {
 	args["from"] = from
 	args["to"] = to
 	args["quantity"] = num
-	args["memo"] = "tx notes"
+	args["memo"] = "txnotes"
 
 	txData, err := e.cli.ABIJSONToBin(eos.AN(code), eos.Name(action), args)
 	if err != nil {
@@ -155,6 +155,14 @@ func (e *EosClient) Transfer(code, action, from, to, num string) error {
 	}
 
 	logger.Info(txData.String())
+
+	txDatajson, err := e.cli.ABIBinToJSON(eos.AN(code), eos.Name(action), txData)
+	if err != nil {
+		logger.Error(err)
+		return err
+	}
+
+	logger.Info(txDatajson)
 
 	info, err := e.cli.GetInfo()
 	if err != nil {
@@ -191,7 +199,7 @@ func (e *EosClient) Transfer(code, action, from, to, num string) error {
 	if len(ss) > 1 && ss[len(ss)-1] == "*" {
 		logger.Info(walletList[0], "unlock already")
 	} else {
-		err = e.keosdCli.WalletUnlock(walletList[0], "PW5JweLrCbwZ8N4RuVhEcfiBAMypZbXeitVvwEoRGm7K6C7t7UGXM")
+		err = e.keosdCli.WalletUnlock(walletList[0], "PW5HtE9u7i4Dhwk1WJ8XVeaDNrCN1U3KDCKQ1TfrGe9vAYg4xWsMU")
 		if err != nil {
 			logger.Error(err)
 			return err

@@ -56,7 +56,7 @@ func (e *EosClientTest) testApi() error {
 		return nil
 	}
 
-	err = e.cli.Transfer(contractAccount, "transfer", "alice", "bob", "26.0000 SYS")
+	err = e.cli.Transfer(contractAccount, "transfer", "alice", "bob", "25.0000 SYS")
 	if err != nil {
 		logger.Error(err)
 		return nil
