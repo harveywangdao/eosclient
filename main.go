@@ -37,11 +37,16 @@ func main() {
 
 	ipport := cfg.Section("").Key("EosServerIpPort").String()
 	keosdIpPort := cfg.Section("").Key("KeosdIpPort").String()
+	walletPassword := cfg.Section("").Key("WalletPassword").String()
+	tokenContractAccount := cfg.Section("").Key("TokenContractAccount").String()
+	richAccount := cfg.Section("").Key("RichAccount").String()
+	mainAccount := cfg.Section("").Key("MainAccount").String()
+	tokenSymbol := cfg.Section("").Key("TokenSymbol").String()
 
 	var wg sync.WaitGroup
 	wg.Add(1)
 
-	_, err = test.NewEosClientTest(ipport, keosdIpPort, &wg)
+	_, err = test.NewEosClientTest(ipport, keosdIpPort, walletPassword, tokenContractAccount, richAccount, mainAccount, tokenSymbol, &wg)
 	if err != nil {
 		logger.Error(err)
 		return
